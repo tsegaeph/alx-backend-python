@@ -9,10 +9,7 @@ def paginate_users(page_size, offset):
     """
     connection = connect_to_prodev()
     cursor = connection.cursor()
-    cursor.execute(
-        "SELECT user_id, name, email, age FROM user_data ORDER BY user_id LIMIT %s OFFSET %s;",
-        (page_size, offset)
-    )
+    cursor.execute(f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}")
     rows = cursor.fetchall()
     cursor.close()
     connection.close()
