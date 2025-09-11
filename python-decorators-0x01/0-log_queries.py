@@ -17,9 +17,9 @@ def log_queries(func):
 @log_queries
 def fetch_all_users(query):
     conn = psycopg2.connect(
-        dbname="postgres",   # replace with your DB name
-        user="postgres",     # replace with your DB user
-        password="findit",   # replace with your DB password
+        dbname="users_db", 
+        user="postgres",   
+        password="findit",  
         host="127.0.0.1",
         port="5432"
     )
