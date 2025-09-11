@@ -1,22 +1,25 @@
+from datetime import datetime
 import psycopg2
 import functools
 
-# Decorator to log SQL queries
+#### Decorator to log SQL queries
 def log_queries(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        # Get the SQL query from args or kwargs
         query = kwargs.get("query") if "query" in kwargs else args[0]
-        print(f"[LOG] Executing SQL Query: {query}")
+        # Log the timestamp and query
+        print(f"[{datetime.now()}] Executing SQL Query: {query}")
         return func(*args, **kwargs)
     return wrapper
 
+#### Function to fetch all users
 @log_queries
 def fetch_all_users(query):
-    # Connect to PostgreSQL
     conn = psycopg2.connect(
-        dbname="your_db_name",
-        user="your_user",
-        password="your_password",
+        dbname="postgres",   # replace with your DB name
+        user="postgres",     # replace with your DB user
+        password="findit",   # replace with your DB password
         host="127.0.0.1",
         port="5432"
     )
@@ -26,6 +29,6 @@ def fetch_all_users(query):
     conn.close()
     return results
 
-# Fetch users while logging the query
+#### Fetch users while logging the query
 users = fetch_all_users(query="SELECT * FROM users")
 print(users)
