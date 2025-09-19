@@ -11,7 +11,7 @@ class TestGithubOrgClient(unittest.TestCase):
     """Unit tests for GithubOrgClient class"""
 
     @parameterized.expand([
-        ("google",), 
+        ("google",),
         ("abc",)
     ])
     @patch("client.get_json")
