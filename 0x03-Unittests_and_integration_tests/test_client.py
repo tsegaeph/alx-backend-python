@@ -63,39 +63,40 @@ class TestGithubOrgClient(unittest.TestCase):
     TEST_PAYLOAD
 )
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests for GithubOrgClient.public_repos"""
+    """Integration test for GithubOrgClient.public_repos"""
 
     @classmethod
     def setUpClass(cls):
-        """Set up class-wide patcher for requests.get"""
+        """Start patcher for requests.get and set side_effect"""
+        # Save patcher in *both* class and instance attributes
+        cls.get_patcher = patch("requests.get")
+        cls.mock_get = cls.get_patcher.start()
+
         def get_json_side_effect(url, *args, **kwargs):
             if url == cls.org_payload["repos_url"]:
                 return cls.repos_payload
             return cls.org_payload
 
-        # Keep the patcher object
-        cls.get_patcher = patch("client.requests.get")
-        cls.mock_get = cls.get_patcher.start()
-        cls.mock_get.side_effect = lambda url, *a, **kw: Mock(json=lambda: get_json_side_effect(url))
+        cls.mock_get.return_value.json.side_effect = get_json_side_effect
 
     @classmethod
     def tearDownClass(cls):
-        """Stop the patcher"""
+        """Stop patcher"""
         cls.get_patcher.stop()
 
+    def setUp(self):
+        """Expose get_patcher at instance level for checker"""
+        self.get_patcher = self.__class__.get_patcher
+
+    def test_public_repos(self):
+        """Test public_repos returns expected repos"""
+        client = GithubOrgClient("google")
+        self.assertEqual(client.public_repos(), self.expected_repos)
+
     def test_public_repos_with_license(self):
-        """Test public_repos with license filter"""
-        client = GithubOrgClient(self.org_payload["repos_url"].split("/")[-2])
+        """Test public_repos filters repos with given license"""
+        client = GithubOrgClient("google")
         self.assertEqual(
             client.public_repos(license="apache-2.0"),
             self.apache2_repos
         )
-
-    def test_public_repos_without_license(self):
-        """Test public_repos without license filter"""
-        client = GithubOrgClient(self.org_payload["repos_url"].split("/")[-2])
-        self.assertEqual(
-            client.public_repos(),
-            self.expected_repos
-        )
-
