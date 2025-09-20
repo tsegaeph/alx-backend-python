@@ -58,7 +58,10 @@ class TestGithubOrgClient(unittest.TestCase):
         self.assertEqual(client.has_license(repo, license_key), expected)
 
 
-@parameterized_class(("org_payload", "repos_payload", "expected_repos", "apache2_repos"), TEST_PAYLOAD)
+@parameterized_class(
+    ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
+    TEST_PAYLOAD
+)
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """Integration tests for GithubOrgClient.public_repos"""
 
@@ -70,9 +73,10 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
                 return cls.repos_payload
             return cls.org_payload
 
+        # Keep the patcher object
         cls.get_patcher = patch("client.requests.get")
-        mock_get = cls.get_patcher.start()
-        mock_get.side_effect = lambda url, *a, **kw: Mock(json=lambda: get_json_side_effect(url))
+        cls.mock_get = cls.get_patcher.start()
+        cls.mock_get.side_effect = lambda url, *a, **kw: Mock(json=lambda: get_json_side_effect(url))
 
     @classmethod
     def tearDownClass(cls):
@@ -94,3 +98,4 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
             client.public_repos(),
             self.expected_repos
         )
+
