@@ -81,7 +81,7 @@ class OffensiveLanguageMiddleware:
         return ip
 
 
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     """
     Middleware to enforce role-based permissions for chat access.
     Only users with role 'admin' or 'moderator' can perform certain actions.
