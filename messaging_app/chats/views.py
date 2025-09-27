@@ -1,9 +1,12 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
+from .filters import MessageFilter
+from .pagination import MessagePagination
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -24,13 +27,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
-    filter_backends = [filters.SearchFilter]
+    pagination_class = MessagePagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = MessageFilter
     search_fields = ['message_body']
 
     def get_queryset(self):
-        """
-        Filter messages by conversation_id, and ensure only participants can access.
-        """
         conversation_id = self.kwargs.get("conversation_id")
         queryset = Message.objects.filter(conversation_id=conversation_id)
 
