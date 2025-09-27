@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from django.http import HttpResponseForbidden
+from django.http import JsonResponse
 
 
 # Configure logger
@@ -32,3 +33,49 @@ class RestrictAccessByTimeMiddleware:
         
         response = self.get_response(request)
         return response    
+
+
+class OffensiveLanguageMiddleware:
+    """
+    Middleware to limit the number of messages a user can send per minute based on IP address.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Store IP: [timestamps of POST requests]
+        self.ip_request_log = {}
+
+    def __call__(self, request):
+        # Only limit POST requests (assume these are message sends)
+        if request.method == "POST" and request.path.startswith("/api/conversations/"):
+            ip = self.get_client_ip(request)
+            now = time.time()
+            window = 60  # 1 minute
+            limit = 5    # max 5 messages per minute
+
+            timestamps = self.ip_request_log.get(ip, [])
+            # Remove timestamps older than window
+            timestamps = [ts for ts in timestamps if now - ts < window]
+
+            if len(timestamps) >= limit:
+                return JsonResponse(
+                    {"detail": "Message rate limit exceeded. Try again later."}, 
+                    status=429
+                )
+
+            # Add current timestamp
+            timestamps.append(now)
+            self.ip_request_log[ip] = timestamps
+
+        response = self.get_response(request)
+        return response
+
+    def get_client_ip(self, request):
+        """
+        Get client IP from request headers
+        """
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(",")[0]
+        else:
+            ip = request.META.get("REMOTE_ADDR")
+        return ip
