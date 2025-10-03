@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponseNotAllowed
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import cache_page
 from django.db import transaction
 
 from .models import Message, MessageHistory
@@ -165,3 +166,16 @@ def unread_messages_view(request):
     )
     data = list(qs.values("id", "sender_id", "message_body", "timestamp"))
     return JsonResponse({"unread": data})
+
+@login_required
+@cache_page(60)  # Cache this view for 60 seconds
+def cached_messages_view(request, conversation_id=None):
+    """
+    Returns list of messages for a conversation.
+    Cached for 60 seconds to improve performance.
+    """
+    qs = Message.objects.all()
+    if conversation_id:
+        qs = qs.filter(parent_message_id=conversation_id)  # adjust if you have conversation relation
+    messages = list(qs.values("id", "sender_id", "receiver_id", "message_body", "timestamp"))
+    return JsonResponse({"messages": messages})
