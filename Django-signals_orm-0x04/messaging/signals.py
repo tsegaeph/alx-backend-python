@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from django.db.models.signals import pre_save, post_delete
+from django.db.models.signals import pre_save, post_delete, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -16,8 +16,7 @@ def log_message_history(sender, instance: Message, **kwargs):
     When an existing Message is updated and the content changed,
     create a MessageHistory entry with the previous content.
     """
-    # If this is a new message (no PK yet) nothing to archive
-    if not instance.pk:
+    if not instance.pk:  # New message, no history yet
         return
 
     try:
@@ -25,34 +24,38 @@ def log_message_history(sender, instance: Message, **kwargs):
     except Message.DoesNotExist:
         return
 
-    # Only record history if content actually changed
     if old.message_body != instance.message_body:
-        # Create message history record (expected by the autograder)
         MessageHistory.objects.create(
             message=old,
             old_content=old.message_body,
             edited_at=timezone.now(),
-            # If your Message model stores who edited, try to preserve it
-            edited_by=getattr(instance, "edited_by", None)
+            edited_by=getattr(instance, "edited_by", None),
         )
-        # mark instance as edited if your model has that field
         if hasattr(instance, "edited"):
             instance.edited = True
+
+
+@receiver(post_save, sender=Message)
+def create_notification_for_new_message(sender, instance: Message, created, **kwargs):
+    """
+    When a new Message is created, generate a Notification for the receiver.
+    """
+    if created:
+        Notification.objects.create(
+            user=instance.receiver,
+            message=instance,
+            created_at=timezone.now(),
+        )
 
 
 @receiver(post_delete, sender=User)
 def cleanup_user_related_data(sender, instance: User, **kwargs):
     """
     When a user is deleted, remove messages, notifications and histories
-    related to that user. Uses queryset deletes to respect FK constraints.
+    related to that user.
     """
-    # Delete messages where user was sender or receiver
     Message.objects.filter(sender=instance).delete()
     Message.objects.filter(receiver=instance).delete()
-
-    # Delete notifications for the user
     Notification.objects.filter(user=instance).delete()
-
-    # Delete any MessageHistory entries referencing messages from/to this user
     MessageHistory.objects.filter(message__sender=instance).delete()
     MessageHistory.objects.filter(message__receiver=instance).delete()
