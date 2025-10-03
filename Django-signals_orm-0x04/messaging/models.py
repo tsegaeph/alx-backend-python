@@ -18,10 +18,10 @@ class MessageHistory(models.Model):
     edited_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
     )
-    timestamp = models.DateTimeField(default=timezone.now)
+    edited_at = models.DateTimeField(default=timezone.now)  # renamed from timestamp to edited_at
 
     def __str__(self):
-        return f"History of message {self.message_id} at {self.timestamp}"
+        return f"History of message {self.message_id} at {self.edited_at}"
 
 
 class Message(models.Model):
