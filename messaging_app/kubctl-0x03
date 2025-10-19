@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "🚀 Starting Rolling Update for Blue Deployment..."
+
+# Apply the updated deployment (triggers rolling update)
+kubectl apply -f blue_deployment.yaml
+
+echo "🔄 Monitoring rollout status..."
+kubectl rollout status deployment/messaging-app-blue
+
+echo "🧠 Checking current pods after update:"
+kubectl get pods -l app=messaging-app,version=blue -o wide
+
+echo "🌐 Testing app availability during update..."
+SERVICE_IP=$(kubectl get svc messaging-service -o jsonpath='{.spec.clusterIP}')
+PORT=$(kubectl get svc messaging-service -o jsonpath='{.spec.ports[0].port}')
+
+echo "Sending requests to http://${SERVICE_IP}:${PORT} ..."
+for i in {1..15}; do
+  curl -s -o /dev/null -w "Request $i: %{http_code}\n" http://${SERVICE_IP}:${PORT}/
+  sleep 1
+done
+
+echo "✅ Rolling Update completed successfully!"
