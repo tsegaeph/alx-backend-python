@@ -5,22 +5,21 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git credentialsId: 'github-creds', url: 'https://github.com/alx-backend-python/messaging_app.git'
+                git branch: 'main', credentialsId: 'github-creds', url: 'https://github.com/alx-backend-python/messaging_app.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'pip3 install -r requirements.txt'
+                sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'pytest --junitxml=test-results.xml'
+                sh 'pytest messaging_app --junitxml=test-results.xml'
             }
         }
-
     }
 
     post {
