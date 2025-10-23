@@ -1,51 +1,31 @@
 pipeline {
     agent any
 
-    environment {
-        GITHUB_CREDENTIALS = 'github-credentials'
-    }
-
     stages {
+
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    credentialsId: "${GITHUB_CREDENTIALS}",
-                    url: 'https://github.com/tsegaeph/alx-backend-python.git'
+                git credentialsId: 'github-creds', url: 'https://github.com/alx-backend-python/messaging_app.git'
             }
         }
 
-        stage('Set Up Python') {
+        stage('Install Dependencies') {
             steps {
-                // Use ShiningPanda to create Python virtualenv
-                withPythonEnv('python3') {
-                    sh 'pip install -r messaging_app/requirements.txt'
-                }
+                sh 'pip3 install -r requirements.txt'
             }
         }
 
         stage('Run Tests') {
             steps {
-                withPythonEnv('python3') {
-                    sh '''
-                        cd messaging_app
-                        pytest --maxfail=1 --disable-warnings -q --junitxml=report.xml
-                    '''
-                }
-            }
-            post {
-                always {
-                    junit 'messaging_app/report.xml'
-                }
+                sh 'pytest --junitxml=test-results.xml'
             }
         }
+
     }
 
     post {
-        success {
-            echo '✅ All tests passed successfully!'
-        }
-        failure {
-            echo '❌ Tests failed. Check reports for details.'
+        always {
+            junit 'test-results.xml'
         }
     }
 }
