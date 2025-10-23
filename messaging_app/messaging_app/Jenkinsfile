@@ -1,11 +1,18 @@
 pipeline {
     agent any
 
-    stages {
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // add in Jenkins
+        IMAGE_NAME = "idonhaveausername/messaging_app"
+        BRANCH_NAME = "main"
+    }
 
-        stage('Checkout Code') {
+    stages {
+        stage('Checkout') {
             steps {
-                git branch: 'main', credentialsId: 'github-creds', url: 'https://github.com/alx-backend-python/messaging_app.git'
+                git branch: "${BRANCH_NAME}",
+                    url: 'https://github.com/<your-org>/alx-backend-python.git',
+                    credentialsId: 'github-credentials' // add GitHub credentials in Jenkins
             }
         }
 
@@ -17,14 +24,26 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'pytest messaging_app --junitxml=test-results.xml'
+                sh 'pytest --junitxml=report.xml'
+            }
+            post {
+                always {
+                    junit 'report.xml'
+                }
             }
         }
-    }
 
-    post {
-        always {
-            junit 'test-results.xml'
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:latest messaging_app/"
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                sh "docker push ${IMAGE_NAME}:latest"
+            }
         }
     }
 }

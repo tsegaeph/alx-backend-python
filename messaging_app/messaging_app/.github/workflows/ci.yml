@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install -r messaging_app/requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest --junitxml=report.xml
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-report
+          path: report.xml
+            - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 messaging_app/
+          
+      - name: Run tests with coverage
+        run: |
+          pip install coverage
+          coverage run -m pytest
+          coverage xml
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.xml
